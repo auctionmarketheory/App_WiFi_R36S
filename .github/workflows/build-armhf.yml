@@ -23,14 +23,10 @@ jobs:
             export DEBIAN_FRONTEND=noninteractive
             apt-get update
             apt-get install -y build-essential libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev
-            make DEVICE=RK2020 CXX=g++ CC=g++ SDL2_CONFIG=sdl2-config
-            mkdir -p pkg/libs
-            cp App_WiFi pkg/
-            cp -P /usr/lib/arm-linux-gnueabihf/libSDL2*.so* pkg/libs/ 2>/dev/null || true
-            cp -P /usr/lib/arm-linux-gnueabihf/libfreetype*.so* pkg/libs/ 2>/dev/null || true
+            make DEVICE=RK2020 CXX=g++ CC=g++ SDL2_CONFIG=sdl2-config LDFLAGS="-Wl,--allow-multiple-definition -lSDL2 -lSDL2_ttf -lSDL2_image"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: App_WiFi_Package
-          path: pkg
+          path: App_WiFi
