@@ -29,4 +29,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: App_WiFi_Package
-          path: App_WiFi
+          path: |
+            App_WiFi
+            App_Spy
+            Spy_Tool_Backend.sh
