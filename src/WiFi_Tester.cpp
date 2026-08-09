@@ -9,16 +9,23 @@
 #include "def.h"
 #include "sdlutils.h"
 
-// --- FIX ARKOS MISSING SYMBOL HACK ---
-// Định nghĩa lại hàm SDL_RWtell để vá lỗi thư viện SDL2 trên ArkOS
+// --- FIX ARKOS MISSING SYMBOL HACK (FULL RW_OPS) ---
+#undef SDL_RWsize
+#undef SDL_RWseek
 #undef SDL_RWtell
-extern "C" Sint64 SDL_RWtell(SDL_RWops *context) {
-    if (context && context->seek) {
-        return context->seek(context, 0, RW_SEEK_CUR);
-    }
-    return 0;
+#undef SDL_RWread
+#undef SDL_RWwrite
+#undef SDL_RWclose
+
+extern "C" {
+    Sint64 SDL_RWsize(SDL_RWops *context) { return context ? context->size(context) : 0; }
+    Sint64 SDL_RWseek(SDL_RWops *context, Sint64 offset, int whence) { return context ? context->seek(context, offset, whence) : 0; }
+    Sint64 SDL_RWtell(SDL_RWops *context) { return context ? context->seek(context, 0, RW_SEEK_CUR) : 0; }
+    size_t SDL_RWread(SDL_RWops *context, void *ptr, size_t size, size_t maxnum) { return context ? context->read(context, ptr, size, maxnum) : 0; }
+    size_t SDL_RWwrite(SDL_RWops *context, const void *ptr, size_t size, size_t num) { return context ? context->write(context, ptr, size, num) : 0; }
+    int SDL_RWclose(SDL_RWops *context) { return context ? context->close(context) : 0; }
 }
-// ------------------------------------
+// ----------------------------------------------------
 
 SDL_Window* g_window = NULL;
 SDL_Renderer* g_renderer = NULL;
