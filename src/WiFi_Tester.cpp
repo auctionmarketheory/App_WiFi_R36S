@@ -216,22 +216,56 @@ int main(int argc, char* args[]) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) quit = true;
-            if (BUTTON_PRESSED_MENU_CONTEXT) {
+            bool pressed_up = false;
+            bool pressed_down = false;
+            bool pressed_menu = false;
+            bool pressed_validate = false;
+            bool pressed_back = false;
+
+            if (event.type == SDL_JOYBUTTONDOWN) {
+                int b = event.jbutton.button;
+                if (b == 0 || b == 1) pressed_validate = true; // Chấp nhận cả A (0) và B (1) làm Validate
+                if (b == 1 || b == 0) pressed_back = true;     // Chấp nhận cả B (1) và A (0) làm Back
+                if (b == 2 || b == 3) pressed_menu = true;     // Chấp nhận cả X (2) và Y (3) làm Menu
+                if (b == 6 || b == 13) pressed_up = true;      // Hỗ trợ L2 (6) hoặc DPad Up dạng Button (13)
+                if (b == 7 || b == 14) pressed_down = true;    // Hỗ trợ R2 (7) hoặc DPad Down dạng Button (14)
+            } else if (event.type == SDL_JOYHATMOTION) {
+                if (event.jhat.value & SDL_HAT_UP) pressed_up = true;
+                if (event.jhat.value & SDL_HAT_DOWN) pressed_down = true;
+            } else if (event.type == SDL_JOYAXISMOTION) {
+                if (event.jaxis.axis == 1) { // Left Analog Y axis
+                    if (event.jaxis.value < -16000) pressed_up = true;
+                    if (event.jaxis.value > 16000) pressed_down = true;
+                }
+            } else if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_UP) pressed_up = true;
+                if (event.key.keysym.sym == SDLK_DOWN) pressed_down = true;
+                if (event.key.keysym.sym == SDLK_RETURN) pressed_validate = true;
+                if (event.key.keysym.sym == SDLK_ESCAPE) pressed_back = true;
+                if (event.key.keysym.sym == SDLK_m || event.key.keysym.sym == SDLK_x) pressed_menu = true;
+            }
+
+            if (pressed_menu) {
                 show_menu = !show_menu;
                 menu_selection = 0;
             }
             else if (show_menu) {
-                if (BUTTON_PRESSED_UP) menu_selection = (menu_selection == 1) ? 0 : 1;
-                if (BUTTON_PRESSED_DOWN) menu_selection = (menu_selection == 0) ? 1 : 0;
-                if (BUTTON_PRESSED_BACK) show_menu = false; 
-                if (BUTTON_PRESSED_VALIDATE) { 
+                // Sửa lỗi debounce đơn giản, chỉ nhận 1 lần khi phím thả ra (KEYDOWN / BUTTONDOWN là nhạy, ta có thể để nguyên hoặc thêm delay nhỏ)
+                // Tuy nhiên SDL_PollEvent chạy liên tục nên ta chỉ lấy sự kiện DOWN
+                if (pressed_up) menu_selection = (menu_selection == 1) ? 0 : 1;
+                if (pressed_down) menu_selection = (menu_selection == 0) ? 1 : 0;
+                
+                // Ở đây ta có 1 trick: Nếu show_menu đang bật, nhấn Back để tắt.
+                // Nhưng A/B đều nhận là Validate/Back, vậy ta quy ước: nếu ấn Y/X (Menu) thì tắt menu.
+                // Nếu ấn A hoặc B thì nó sẽ chọn chức năng. Ta sẽ chỉ lấy Validate để kích hoạt.
+                if (pressed_validate) { 
                     if (menu_selection == 1) quit = true; 
                     if (menu_selection == 0) mute = !mute;
                     show_menu = false;
                 }
             }
             else {
-                if (BUTTON_PRESSED_VALIDATE) { 
+                if (pressed_validate) { 
                     is_pinging = !is_pinging;
                     if (is_pinging && !thread_running) {
                         std::thread t(ping_thread);
