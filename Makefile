@@ -20,7 +20,7 @@ endif
 SRC = $(wildcard src/*.cpp)
 OBJ = $(patsubst %cpp,%o,$(SRC))
 COMPILER_FLAGS =  $(shell $(SDL2_CONFIG) --cflags) -Wall -pedantic -DDEVICE_$(DEVICE) -DSTART_PATH=\"$(START_PATH)\" -DRES_PATH=\"$(RES_PATH)\"
-LINKER_FLAGS = $(shell $(SDL2_CONFIG) --libs) -lSDL2_image -lSDL2_ttf -pthread
+LINKER_FLAGS = $(shell $(SDL2_CONFIG) --libs) -pthread
 
 all : $(OBJ)
 	$(CC) $(OBJ) -o $(TARGET) $(LINKER_FLAGS)

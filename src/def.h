@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <SDL.h>
-#include <SDL_ttf.h>
 
 //~ #define INHIBIT(X) X
 #define INHIBIT(X) /* X */
@@ -289,9 +288,7 @@
 extern SDL_Window* g_window;
 extern SDL_Renderer* g_renderer;
 extern SDL_Joystick* g_joystick;
-extern TTF_Font *g_font;                     // Variable size font
-extern TTF_Font *g_fontMono;                 // Mono size font
-extern int g_charW;                          // Width of one character in monospace font
+// Font definitions removed for stb_truetype
 class IWindow;
 extern std::vector<IWindow *> g_windows;
 
