@@ -18,7 +18,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: arm32v7/ubuntu:20.04
-          options: -v ${{ github.workspace }}:/workspace -w /workspace
+          options: --platform linux/arm/v7 -v ${{ github.workspace }}:/workspace -w /workspace
           run: |
             export DEBIAN_FRONTEND=noninteractive
             apt-get update
