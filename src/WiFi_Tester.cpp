@@ -6,6 +6,9 @@
 #include <atomic>
 #include <stdlib.h>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <cmath>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -124,63 +127,90 @@ bool init_sdl() {
     return true;
 }
 
+void DrawGlowLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, SDL_Color color) {
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    // Outer glow
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 40);
+    SDL_RenderDrawLine(renderer, x1-2, y1-2, x2-2, y2-2);
+    SDL_RenderDrawLine(renderer, x1+2, y1+2, x2+2, y2+2);
+    // Inner glow
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 100);
+    SDL_RenderDrawLine(renderer, x1-1, y1-1, x2-1, y2-1);
+    SDL_RenderDrawLine(renderer, x1+1, y1+1, x2+1, y2+1);
+    // Core
+    SDL_SetRenderDrawColor(renderer, color.r + 50 > 255 ? 255 : color.r + 50, 
+                                     color.g + 50 > 255 ? 255 : color.g + 50, 
+                                     color.b + 50 > 255 ? 255 : color.b + 50, 255);
+    SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
+}
+
+void DrawCyberpunkHUD(SDL_Renderer* renderer, SDL_Color cyan, SDL_Color magenta) {
+    // Vẽ lưới nền mờ
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, cyan.r, cyan.g, cyan.b, 15);
+    for(int i=0; i<SCREEN_WIDTH; i+=40) SDL_RenderDrawLine(renderer, i, 0, i, SCREEN_HEIGHT);
+    for(int i=0; i<SCREEN_HEIGHT; i+=40) SDL_RenderDrawLine(renderer, 0, i, SCREEN_WIDTH, i);
+
+    // Khung viền vát góc (Chamfered)
+    int pad = 10;
+    int chamfer = 30;
+    int w = SCREEN_WIDTH - pad*2;
+    int h = SCREEN_HEIGHT - pad*2;
+    
+    DrawGlowLine(renderer, pad + chamfer, pad, pad + w - chamfer, pad, cyan); // Top
+    DrawGlowLine(renderer, pad + w - chamfer, pad, pad + w, pad + chamfer, cyan); // Top-Right
+    DrawGlowLine(renderer, pad + w, pad + chamfer, pad + w, pad + h - chamfer, cyan); // Right
+    DrawGlowLine(renderer, pad + w, pad + h - chamfer, pad + w - chamfer, pad + h, cyan); // Bot-Right
+    DrawGlowLine(renderer, pad + w - chamfer, pad + h, pad + chamfer, pad + h, cyan); // Bottom
+    DrawGlowLine(renderer, pad + chamfer, pad + h, pad, pad + h - chamfer, cyan); // Bot-Left
+    DrawGlowLine(renderer, pad, pad + h - chamfer, pad, pad + chamfer, cyan); // Left
+    DrawGlowLine(renderer, pad, pad + chamfer, pad + chamfer, pad, cyan); // Top-Left
+    
+    // Header & Divider
+    DrawGlowLine(renderer, pad, pad + 35, pad + w, pad + 35, magenta);
+    DrawGlowLine(renderer, pad + w - 70, pad + 35, pad + w - 70, pad + h, cyan);
+}
+
 void DrawScanlines(SDL_Renderer* renderer) {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 70); // Mờ mờ (70/255)
-    for (int y = 0; y < SCREEN_HEIGHT; y += 2) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 90); 
+    for (int y = 0; y < SCREEN_HEIGHT; y += 3) {
         SDL_RenderDrawLine(renderer, 0, y, SCREEN_WIDTH, y);
     }
 }
 
-void DrawHUD(SDL_Renderer* renderer, SDL_Color neonColor) {
-    SDL_SetRenderDrawColor(renderer, neonColor.r, neonColor.g, neonColor.b, 255);
-    
-    // Outer border
-    SDL_Rect outer = { 5, 5, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 10 };
-    SDL_RenderDrawRect(renderer, &outer);
-    
-    // Inner border
-    SDL_Rect inner = { 10, 35, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 70 };
-    SDL_RenderDrawRect(renderer, &inner);
-
-    // Decorative corner brackets
-    int len = 20;
-    // Top-Left inner
-    SDL_RenderDrawLine(renderer, 8, 33, 8+len, 33);
-    SDL_RenderDrawLine(renderer, 8, 33, 8, 33+len);
-    // Bottom-Right inner
-    SDL_RenderDrawLine(renderer, SCREEN_WIDTH-8, SCREEN_HEIGHT-33, SCREEN_WIDTH-8-len, SCREEN_HEIGHT-33);
-    SDL_RenderDrawLine(renderer, SCREEN_WIDTH-8, SCREEN_HEIGHT-33, SCREEN_WIDTH-8, SCREEN_HEIGHT-33-len);
-    
-    // Header Line
-    SDL_RenderDrawLine(renderer, 10, 30, SCREEN_WIDTH - 10, 30);
-    
-    // Footer Line
-    SDL_RenderDrawLine(renderer, 10, SCREEN_HEIGHT - 30, SCREEN_WIDTH - 10, SCREEN_HEIGHT - 30);
+std::string generateHex() {
+    std::stringstream ss;
+    ss << std::hex << std::uppercase << std::setfill('0') << std::setw(4) << (rand() % 0xFFFF);
+    return ss.str();
 }
 
 int main(int argc, char* args[]) {
     if (!init_sdl()) return 1;
 
-    CustomFont font, fontMono;
+    CustomFont font, fontMono, fontSmall;
     if (!font.load(g_renderer, std::string(RES_PATH) + "/" + FONT_NAME, FONT_SIZE + 4)) return 1;
     if (!fontMono.load(g_renderer, std::string(RES_PATH) + "/" + FONT_NAME_MONO, FONT_SIZE)) return 1;
+    if (!fontSmall.load(g_renderer, std::string(RES_PATH) + "/" + FONT_NAME_MONO, FONT_SIZE - 4)) return 1;
 
-    SDL_Color neonGreen = {0, 255, 100, 255};
-    SDL_Color neonBlue = {0, 200, 255, 255};
+    SDL_Color neonCyan = {0, 255, 255, 255};
+    SDL_Color neonMagenta = {255, 0, 255, 255};
+    SDL_Color neonYellow = {255, 255, 0, 255};
     SDL_Color redError = {255, 50, 50, 255};
     SDL_Color white = {255, 255, 255, 255};
-    SDL_Color bgGray = {20, 20, 20, 255};
-    SDL_Color menuBg = {0, 0, 0, 220};
+    SDL_Color bgGray = {10, 10, 15, 255};
 
     bool quit = false;
     bool show_menu = false;
     int menu_selection = 0; 
     bool mute = false;
+    
+    std::vector<std::string> telemetry;
+    for(int i=0; i<20; i++) telemetry.push_back(generateHex());
 
-    system("echo '> SYSTEM STARTUP [RETROHACK OS v2.0]' > /tmp/wifi_log.txt");
-    system("echo '> LOADING NETWORK MODULE... OK' >> /tmp/wifi_log.txt");
-    system("echo '> STANDBY.' >> /tmp/wifi_log.txt");
+    system("echo '> SYSTEM STARTUP [CYBER-OS v5.0]' > /tmp/wifi_log.txt");
+    system("echo '> UPLINK MODULE... ESTABLISHED' >> /tmp/wifi_log.txt");
+    system("echo '> AWAITING COMMAND...' >> /tmp/wifi_log.txt");
 
     while (!quit) {
         SDL_Event event;
@@ -211,83 +241,78 @@ int main(int argc, char* args[]) {
             }
         }
 
-        // Đổ nền đen
-        SDL_SetRenderDrawColor(g_renderer, 5, 10, 5, 255);
+        if(rand() % 4 == 0) {
+            telemetry.erase(telemetry.begin());
+            telemetry.push_back(generateHex());
+        }
+
+        SDL_SetRenderDrawColor(g_renderer, bgGray.r, bgGray.g, bgGray.b, 255);
         SDL_RenderClear(g_renderer);
 
-        // Vẽ HUD
-        DrawHUD(g_renderer, neonGreen);
+        DrawCyberpunkHUD(g_renderer, neonCyan, neonMagenta);
 
-        // Header Text
-        font.renderText(g_renderer, 15, 22, "[ W I F I   N E T W O R K   A N A L Y S T ]", neonGreen);
-        font.renderText(g_renderer, SCREEN_WIDTH - 120, 22, "SYS: ACTIVE", neonGreen);
+        font.renderText(g_renderer, 30, 32, ">>> NETWORK DIAGNOSTIC CORE", neonCyan);
+        font.renderText(g_renderer, SCREEN_WIDTH - 200, 32, "SYS: ACTIVE", neonMagenta);
 
-        // Log Text
-        std::vector<std::string> logs = tail_log("/tmp/wifi_log.txt", (SCREEN_HEIGHT - 100)/LINE_HEIGHT);
-        int y = 40 + LINE_HEIGHT;
+        std::vector<std::string> logs = tail_log("/tmp/wifi_log.txt", (SCREEN_HEIGHT - 130)/LINE_HEIGHT);
+        int y = 60;
         for (size_t i = 0; i < logs.size(); ++i) {
-            SDL_Color logColor = neonGreen;
+            SDL_Color logColor = neonCyan;
             if (logs[i].find("timeout") != std::string::npos || logs[i].find("Unreachable") != std::string::npos) logColor = redError;
-            fontMono.renderText(g_renderer, 15, y, logs[i], logColor);
+            if (logs[i].find("statistics") != std::string::npos) logColor = neonYellow;
+            fontMono.renderText(g_renderer, 25, y, logs[i], logColor);
             
-            // Vẽ Blinking Cursor ở dòng cuối
             if (i == logs.size() - 1 && is_pinging) {
-                if ((SDL_GetTicks() / 500) % 2 == 0) {
-                    fontMono.renderText(g_renderer, 15 + logs[i].length() * 10, y, "_", neonGreen);
+                if ((SDL_GetTicks() / 300) % 2 == 0) {
+                    fontMono.renderText(g_renderer, 25 + logs[i].length() * 10, y, "\xDB", neonMagenta); 
                 }
             }
             y += LINE_HEIGHT;
         }
 
-        if (!is_pinging) {
-            if ((SDL_GetTicks() / 500) % 2 == 0) {
-                 fontMono.renderText(g_renderer, 15, y, "_", neonGreen);
+        if (!is_pinging && logs.size() > 0) {
+            if ((SDL_GetTicks() / 300) % 2 == 0) {
+                 fontMono.renderText(g_renderer, 25, y, "\xDB", neonMagenta);
             }
         }
 
-        // Footer Text
-        std::string status = is_pinging ? "TX/RX: TRANSMITTING" : "TX/RX: STANDBY";
-        font.renderText(g_renderer, 15, SCREEN_HEIGHT - 12, status, neonBlue);
-        font.renderText(g_renderer, SCREEN_WIDTH/2 - 70, SCREEN_HEIGHT - 12, "[A] TOGGLE PING", white);
-        font.renderText(g_renderer, SCREEN_WIDTH - 140, SCREEN_HEIGHT - 12, "[X] SYS MENU", white);
+        int tel_y = 60;
+        for(size_t i=0; i<telemetry.size(); i++) {
+            SDL_Color tColor = neonCyan;
+            tColor.a = 100 + (i * 155 / telemetry.size()); 
+            fontSmall.renderText(g_renderer, SCREEN_WIDTH - 70 + 10, tel_y, telemetry[i], tColor);
+            tel_y += 18;
+        }
 
-        // Menu Overlay
-        if (show_menu) {
-            SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 180);
-            SDL_RenderFillRect(g_renderer, NULL); // Làm tối toàn màn hình
-
-            SDL_Rect menuRect = { SCREEN_WIDTH/2 - 120, SCREEN_HEIGHT/2 - 80, 240, 160 };
-            SDL_SetRenderDrawColor(g_renderer, bgGray.r, bgGray.g, bgGray.b, 255);
+        if (!show_menu) {
+            std::string status = is_pinging ? "[TX/RX: TRANSMITTING]" : "[TX/RX: STANDBY]";
+            font.renderText(g_renderer, 30, SCREEN_HEIGHT - 22, status, neonMagenta);
+            font.renderText(g_renderer, SCREEN_WIDTH/2 - 40, SCREEN_HEIGHT - 22, "[A] TOGGLE PING", white);
+            font.renderText(g_renderer, SCREEN_WIDTH - 160, SCREEN_HEIGHT - 22, "[X] SYS MENU", white);
+        } else {
+            SDL_Rect menuRect = { 20, SCREEN_HEIGHT - 70, SCREEN_WIDTH - 100, 50 };
+            SDL_SetRenderDrawColor(g_renderer, bgGray.r, bgGray.g, bgGray.b, 240);
             SDL_RenderFillRect(g_renderer, &menuRect);
-            SDL_SetRenderDrawColor(g_renderer, neonGreen.r, neonGreen.g, neonGreen.b, 255);
-            SDL_RenderDrawRect(g_renderer, &menuRect);
+            DrawGlowLine(g_renderer, menuRect.x, menuRect.y, menuRect.x+menuRect.w, menuRect.y, neonMagenta);
+
+            font.renderText(g_renderer, 30, SCREEN_HEIGHT - 35, "OPTIONS:", neonYellow);
             
-            // Viền kép cho menu
-            SDL_Rect menuRectInner = { menuRect.x+4, menuRect.y+4, menuRect.w-8, menuRect.h-8 };
-            SDL_RenderDrawRect(g_renderer, &menuRectInner);
-
-            font.renderText(g_renderer, SCREEN_WIDTH/2 - 60, SCREEN_HEIGHT/2 - 60 + 20, "SYSTEM MENU", white);
-            SDL_RenderDrawLine(g_renderer, menuRect.x + 10, SCREEN_HEIGHT/2 - 35, menuRect.x + menuRect.w - 10, SCREEN_HEIGHT/2 - 35);
-
             for (int i=0; i<2; i++) {
-                int item_y = SCREEN_HEIGHT/2 - 10 + i * 40;
-                std::string text = (i == 0) ? (mute ? "> UNMUTE BEEP" : "> MUTE BEEP") : "> SHUTDOWN SYS";
+                int item_x = 150 + i * 180;
+                std::string text = (i == 0) ? (mute ? "[1] UNMUTE" : "[1] MUTE") : "[2] SHUTDOWN";
                 
                 if (menu_selection == i) {
-                    SDL_Rect hl = { menuRect.x + 10, item_y, menuRect.w - 20, 30 };
-                    SDL_SetRenderDrawColor(g_renderer, neonGreen.r, neonGreen.g, neonGreen.b, 255);
+                    SDL_Rect hl = { item_x - 5, SCREEN_HEIGHT - 55, 130, 30 };
+                    SDL_SetRenderDrawColor(g_renderer, neonMagenta.r, neonMagenta.g, neonMagenta.b, 255);
                     SDL_RenderFillRect(g_renderer, &hl);
-                    font.renderText(g_renderer, SCREEN_WIDTH/2 - 80, item_y + 20, text, bgGray); // Chữ đen trên nền xanh
+                    font.renderText(g_renderer, item_x, SCREEN_HEIGHT - 35, text, bgGray); 
                 } else {
-                    font.renderText(g_renderer, SCREEN_WIDTH/2 - 80, item_y + 20, text, neonGreen);
+                    font.renderText(g_renderer, item_x, SCREEN_HEIGHT - 35, text, neonCyan);
                 }
             }
         }
 
-        // Draw CRT Scanlines over everything
         DrawScanlines(g_renderer);
-
         SDL_RenderPresent(g_renderer);
         SDL_Delay(MS_PER_FRAME);
     }
