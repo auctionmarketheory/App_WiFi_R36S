@@ -125,6 +125,16 @@ bool init_sdl() {
     return true;
 }
 
+namespace Palette {
+    const SDL_Color BG_VOID = {8, 12, 18, 255};
+    const SDL_Color NEON_CYAN = {0, 255, 255, 255};
+    const SDL_Color NEON_AMBER = {255, 176, 0, 255};
+    const SDL_Color NEON_MAGENTA = {255, 0, 128, 255};
+    const SDL_Color NEON_GREEN = {0, 255, 128, 255};
+    const SDL_Color RED_ERROR = {255, 50, 50, 255};
+    const SDL_Color WHITE = {255, 255, 255, 255};
+}
+
 void DrawGlowLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, SDL_Color color) {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 40);
@@ -139,38 +149,49 @@ void DrawGlowLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, SDL_Co
     SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
 }
 
-void DrawHyperHUD(SDL_Renderer* renderer, SDL_Color cyan, SDL_Color pink, SDL_Color orange) {
+void DrawHyperHUD(SDL_Renderer* renderer) {
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(renderer, cyan.r, cyan.g, cyan.b, 20);
+    SDL_SetRenderDrawColor(renderer, Palette::NEON_CYAN.r, Palette::NEON_CYAN.g, Palette::NEON_CYAN.b, 15);
     // Background Grid
-    for(int i=0; i<SCREEN_WIDTH; i+=30) SDL_RenderDrawLine(renderer, i, 0, i, SCREEN_HEIGHT);
-    for(int i=0; i<SCREEN_HEIGHT; i+=30) SDL_RenderDrawLine(renderer, 0, i, SCREEN_WIDTH, i);
+    for(int i=0; i<SCREEN_WIDTH; i+=40) SDL_RenderDrawLine(renderer, i, 0, i, SCREEN_HEIGHT);
+    for(int i=0; i<SCREEN_HEIGHT; i+=40) SDL_RenderDrawLine(renderer, 0, i, SCREEN_WIDTH, i);
 
-    int pad = 10;
-    int chamfer = 25;
+    int pad = 12;
+    int chamfer = 20;
     int w = SCREEN_WIDTH - pad*2;
     int h = SCREEN_HEIGHT - pad*2;
-    int split_x = pad + w - 180; // Cột phải to hơn chút
+    int split_x = pad + w - 190;
 
     // Khung viền ngoài
-    DrawGlowLine(renderer, pad + chamfer, pad, pad + w - chamfer, pad, cyan); 
-    DrawGlowLine(renderer, pad + w - chamfer, pad, pad + w, pad + chamfer, cyan); 
-    DrawGlowLine(renderer, pad + w, pad + chamfer, pad + w, pad + h - chamfer, cyan); 
-    DrawGlowLine(renderer, pad + w, pad + h - chamfer, pad + w - chamfer, pad + h, cyan); 
-    DrawGlowLine(renderer, pad + w - chamfer, pad + h, pad + chamfer, pad + h, cyan); 
-    DrawGlowLine(renderer, pad + chamfer, pad + h, pad, pad + h - chamfer, cyan); 
-    DrawGlowLine(renderer, pad, pad + h - chamfer, pad, pad + chamfer, cyan); 
-    DrawGlowLine(renderer, pad, pad + chamfer, pad + chamfer, pad, cyan); 
+    DrawGlowLine(renderer, pad + chamfer, pad, pad + w - chamfer, pad, Palette::NEON_CYAN); 
+    DrawGlowLine(renderer, pad + w - chamfer, pad, pad + w, pad + chamfer, Palette::NEON_CYAN); 
+    DrawGlowLine(renderer, pad + w, pad + chamfer, pad + w, pad + h - chamfer, Palette::NEON_CYAN); 
+    DrawGlowLine(renderer, pad + w, pad + h - chamfer, pad + w - chamfer, pad + h, Palette::NEON_CYAN); 
+    DrawGlowLine(renderer, pad + w - chamfer, pad + h, pad + chamfer, pad + h, Palette::NEON_CYAN); 
+    DrawGlowLine(renderer, pad + chamfer, pad + h, pad, pad + h - chamfer, Palette::NEON_CYAN); 
+    DrawGlowLine(renderer, pad, pad + h - chamfer, pad, pad + chamfer, Palette::NEON_CYAN); 
+    DrawGlowLine(renderer, pad, pad + chamfer, pad + chamfer, pad, Palette::NEON_CYAN); 
 
     // Header Line
-    DrawGlowLine(renderer, pad, pad + 35, pad + w, pad + 35, pink);
+    DrawGlowLine(renderer, pad, pad + 35, pad + w, pad + 35, Palette::NEON_MAGENTA);
     
     // Split cột phải
-    DrawGlowLine(renderer, split_x, pad + 35, split_x, pad + h, cyan);
+    DrawGlowLine(renderer, split_x, pad + 35, split_x, pad + h, Palette::NEON_CYAN);
 
-    // Split phụ ở cột phải (chia thành 2 khối vuông nhỏ)
-    DrawGlowLine(renderer, split_x, pad + 150, pad + w, pad + 150, orange);
-    DrawGlowLine(renderer, split_x, pad + 300, pad + w, pad + 300, orange);
+    // Split phụ ở cột phải
+    DrawGlowLine(renderer, split_x, pad + 140, pad + w, pad + 140, Palette::NEON_AMBER);
+    DrawGlowLine(renderer, split_x, pad + 300, pad + w, pad + 300, Palette::NEON_AMBER);
+    
+    // Blinking Accents
+    if ((SDL_GetTicks() / 500) % 2 == 0) {
+        SDL_Rect acc1 = { pad, pad, 8, 8 };
+        SDL_SetRenderDrawColor(renderer, Palette::NEON_MAGENTA.r, Palette::NEON_MAGENTA.g, Palette::NEON_MAGENTA.b, 200);
+        SDL_RenderFillRect(renderer, &acc1);
+        
+        SDL_Rect acc2 = { pad + w - 8, pad + h - 8, 8, 8 };
+        SDL_SetRenderDrawColor(renderer, Palette::NEON_AMBER.r, Palette::NEON_AMBER.g, Palette::NEON_AMBER.b, 200);
+        SDL_RenderFillRect(renderer, &acc2);
+    }
 }
 
 void DrawScanlines(SDL_Renderer* renderer) {
@@ -197,14 +218,6 @@ int main(int argc, char* args[]) {
     if (!font.load(g_renderer, std::string(RES_PATH) + "/" + FONT_NAME, FONT_SIZE + 4)) return 1;
     if (!fontMono.load(g_renderer, std::string(RES_PATH) + "/" + FONT_NAME_MONO, FONT_SIZE)) return 1;
     if (!fontSmall.load(g_renderer, std::string(RES_PATH) + "/" + FONT_NAME_MONO, FONT_SIZE - 4)) return 1;
-
-    SDL_Color neonCyan = {0, 255, 255, 255};
-    SDL_Color hotPink = {255, 0, 128, 255};
-    SDL_Color goldenOrange = {255, 165, 0, 255};
-    SDL_Color neonGreen = {0, 255, 50, 255};
-    SDL_Color redError = {255, 50, 50, 255};
-    SDL_Color white = {255, 255, 255, 255};
-    SDL_Color bgDark = {8, 12, 18, 255};
 
     bool quit = false;
     bool show_menu = false;
@@ -290,15 +303,15 @@ int main(int argc, char* args[]) {
             scan_progress = 100;
         }
 
-        SDL_SetRenderDrawColor(g_renderer, bgDark.r, bgDark.g, bgDark.b, 255);
+        SDL_SetRenderDrawColor(g_renderer, Palette::BG_VOID.r, Palette::BG_VOID.g, Palette::BG_VOID.b, 255);
         SDL_RenderClear(g_renderer);
 
-        DrawHyperHUD(g_renderer, neonCyan, hotPink, goldenOrange);
+        DrawHyperHUD(g_renderer);
 
-        font.renderText(g_renderer, 30, 32, ">>> SYSTEM INFILTRATION CORE", neonCyan);
+        font.renderText(g_renderer, 30, 32, ">>> SYSTEM INFILTRATION CORE", Palette::NEON_CYAN);
         
         std::string clock_str = "SYS.CLOCK: " + std::to_string(SDL_GetTicks() % 9999);
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, 32, clock_str, goldenOrange);
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, 32, clock_str, Palette::NEON_AMBER);
 
         // Main Log Area (Clipped to prevent overlapping right column)
         SDL_Rect logClip = { 20, 50, SCREEN_WIDTH - 210, SCREEN_HEIGHT - 120 };
@@ -307,16 +320,16 @@ int main(int argc, char* args[]) {
         std::vector<std::string> logs = tail_log("/tmp/spy_log.txt", (SCREEN_HEIGHT - 130)/LINE_HEIGHT);
         int y = 60;
         for (size_t i = 0; i < logs.size(); ++i) {
-            SDL_Color logColor = neonGreen;
-            if (logs[i].find("SUCCESS") != std::string::npos || logs[i].find("ACTIVE") != std::string::npos) logColor = hotPink;
-            if (logs[i].find("WARNING") != std::string::npos || logs[i].find("BREACH") != std::string::npos) logColor = redError;
-            if (logs[i].find("Wait") != std::string::npos) logColor = goldenOrange;
+            SDL_Color logColor = Palette::NEON_GREEN;
+            if (logs[i].find("SUCCESS") != std::string::npos || logs[i].find("ACTIVE") != std::string::npos) logColor = Palette::NEON_MAGENTA;
+            if (logs[i].find("WARNING") != std::string::npos || logs[i].find("BREACH") != std::string::npos) logColor = Palette::RED_ERROR;
+            if (logs[i].find("Wait") != std::string::npos) logColor = Palette::NEON_AMBER;
             
             fontMono.renderText(g_renderer, 25, y, logs[i], logColor);
             
             if (i == logs.size() - 1 && is_spying) {
                 if ((SDL_GetTicks() / 200) % 2 == 0) {
-                    fontMono.renderText(g_renderer, 25 + logs[i].length() * 10, y, "\xDB", hotPink); 
+                    fontMono.renderText(g_renderer, 25 + logs[i].length() * 10, y, "\xDB", Palette::NEON_MAGENTA); 
                 }
             }
             y += LINE_HEIGHT;
@@ -327,56 +340,63 @@ int main(int argc, char* args[]) {
 
         // Fake Data Column 1
         int tel_y = 60;
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, "[DATA STREAM]", hotPink);
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, "[DATA STREAM]", Palette::NEON_MAGENTA);
         tel_y += 20;
-        for(size_t i=0; i<6; i++) {
-            fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, telemetry[i], neonCyan);
+        for(size_t i=0; i<4; i++) {
+            fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, telemetry[i], Palette::NEON_CYAN);
             tel_y += 18;
         }
 
         // Fake Data Column 2 (Modules)
-        tel_y = 180;
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, "[MODULES]", goldenOrange);
+        tel_y = 160;
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, "[MODULES]", Palette::NEON_AMBER);
         tel_y += 20;
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, "DECRYPT_X7: ON", white); tel_y+=18;
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, "BYPASS_V2 : ON", white); tel_y+=18;
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, "NET_SNIFF : ACT", white); tel_y+=18;
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, "SYS_DUMP  : RDY", white); tel_y+=18;
+        SDL_Color modColor = ((SDL_GetTicks() / 300) % 2 == 0) ? Palette::NEON_GREEN : Palette::WHITE;
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, "DECRYPT_X7: ON", modColor); tel_y+=18;
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, "BYPASS_V2 : ON", Palette::WHITE); tel_y+=18;
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, "NET_SNIFF : ACT", Palette::WHITE); tel_y+=18;
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, "SYS_DUMP  : RDY", Palette::WHITE); tel_y+=18;
         
         // Progress Bar Area
-        tel_y = 330;
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, "[INFILTRATION]", neonCyan);
+        tel_y = 315;
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, "[INFILTRATION]", Palette::NEON_CYAN);
         tel_y += 20;
         std::string prog_text = std::to_string((int)scan_progress) + "% COMPLETED";
-        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 160, tel_y, prog_text, hotPink);
+        fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, tel_y, prog_text, Palette::NEON_MAGENTA);
         tel_y += 20;
         
-        // Vẽ vạch progress
-        SDL_Rect pbar_bg = { SCREEN_WIDTH - 160, tel_y, 140, 15 };
-        SDL_SetRenderDrawColor(g_renderer, 50, 50, 50, 255);
-        SDL_RenderFillRect(g_renderer, &pbar_bg);
+        // Vẽ vạch progress dạng Block
+        int blocks_total = 14;
+        int blocks_active = (scan_progress * blocks_total) / 100;
+        int block_w = 150 / blocks_total - 2;
+        int px = SCREEN_WIDTH - 170;
         
-        SDL_Rect pbar_fg = { SCREEN_WIDTH - 160, tel_y, (int)(140 * scan_progress / 100), 15 };
-        SDL_SetRenderDrawColor(g_renderer, hotPink.r, hotPink.g, hotPink.b, 255);
-        SDL_RenderFillRect(g_renderer, &pbar_fg);
-
+        for(int b = 0; b < blocks_total; b++) {
+            SDL_Rect pblock = { px + b * (block_w + 2), tel_y, block_w, 15 };
+            if (b < blocks_active) {
+                SDL_SetRenderDrawColor(g_renderer, Palette::NEON_MAGENTA.r, Palette::NEON_MAGENTA.g, Palette::NEON_MAGENTA.b, 255);
+            } else {
+                SDL_SetRenderDrawColor(g_renderer, 40, 40, 40, 255);
+            }
+            SDL_RenderFillRect(g_renderer, &pblock);
+        }
 
         if (!show_menu) {
             std::string status = is_spying ? "[HACKING... DO NOT ABORT]" : (spy_finished ? "[BREACH SUCCESSFUL]" : "[SYSTEM IDLE]");
-            SDL_Color statColor = is_spying ? goldenOrange : (spy_finished ? neonGreen : neonCyan);
+            SDL_Color statColor = is_spying ? Palette::NEON_AMBER : (spy_finished ? Palette::NEON_GREEN : Palette::NEON_CYAN);
             font.renderText(g_renderer, 30, SCREEN_HEIGHT - 22, status, statColor);
             
             if (!is_spying && !spy_finished) {
-                font.renderText(g_renderer, SCREEN_WIDTH/2 - 60, SCREEN_HEIGHT - 22, "[A] INFILTRATE", white);
+                font.renderText(g_renderer, SCREEN_WIDTH/2 - 60, SCREEN_HEIGHT - 22, "[A] INFILTRATE", Palette::WHITE);
             }
-            font.renderText(g_renderer, SCREEN_WIDTH - 160, SCREEN_HEIGHT - 22, "[X] SYS MENU", white);
+            font.renderText(g_renderer, SCREEN_WIDTH - 170, SCREEN_HEIGHT - 22, "[X] SYS MENU", Palette::WHITE);
         } else {
             SDL_Rect menuRect = { 20, SCREEN_HEIGHT - 70, SCREEN_WIDTH - 100, 50 };
-            SDL_SetRenderDrawColor(g_renderer, bgDark.r, bgDark.g, bgDark.b, 240);
+            SDL_SetRenderDrawColor(g_renderer, Palette::BG_VOID.r, Palette::BG_VOID.g, Palette::BG_VOID.b, 240);
             SDL_RenderFillRect(g_renderer, &menuRect);
-            DrawGlowLine(g_renderer, menuRect.x, menuRect.y, menuRect.x+menuRect.w, menuRect.y, hotPink);
+            DrawGlowLine(g_renderer, menuRect.x, menuRect.y, menuRect.x+menuRect.w, menuRect.y, Palette::NEON_MAGENTA);
 
-            font.renderText(g_renderer, 30, SCREEN_HEIGHT - 35, "SYS_CONTROL:", goldenOrange);
+            font.renderText(g_renderer, 30, SCREEN_HEIGHT - 35, "SYS_CONTROL:", Palette::NEON_AMBER);
             
             for (int i=0; i<2; i++) {
                 int item_x = 220 + i * 180;
@@ -384,11 +404,11 @@ int main(int argc, char* args[]) {
                 
                 if (menu_selection == i) {
                     SDL_Rect hl = { item_x - 5, SCREEN_HEIGHT - 55, 150, 30 };
-                    SDL_SetRenderDrawColor(g_renderer, hotPink.r, hotPink.g, hotPink.b, 255);
+                    SDL_SetRenderDrawColor(g_renderer, Palette::NEON_MAGENTA.r, Palette::NEON_MAGENTA.g, Palette::NEON_MAGENTA.b, 255);
                     SDL_RenderFillRect(g_renderer, &hl);
-                    font.renderText(g_renderer, item_x, SCREEN_HEIGHT - 35, text, bgDark); 
+                    font.renderText(g_renderer, item_x, SCREEN_HEIGHT - 35, text, Palette::BG_VOID); 
                 } else {
-                    font.renderText(g_renderer, item_x, SCREEN_HEIGHT - 35, text, neonCyan);
+                    font.renderText(g_renderer, item_x, SCREEN_HEIGHT - 35, text, Palette::NEON_CYAN);
                 }
             }
         }
