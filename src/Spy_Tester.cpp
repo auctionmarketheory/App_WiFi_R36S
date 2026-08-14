@@ -300,7 +300,10 @@ int main(int argc, char* args[]) {
         std::string clock_str = "SYS.CLOCK: " + std::to_string(SDL_GetTicks() % 9999);
         fontSmall.renderText(g_renderer, SCREEN_WIDTH - 170, 32, clock_str, goldenOrange);
 
-        // Main Log Area
+        // Main Log Area (Clipped to prevent overlapping right column)
+        SDL_Rect logClip = { 20, 50, SCREEN_WIDTH - 210, SCREEN_HEIGHT - 120 };
+        SDL_RenderSetClipRect(g_renderer, &logClip);
+
         std::vector<std::string> logs = tail_log("/tmp/spy_log.txt", (SCREEN_HEIGHT - 130)/LINE_HEIGHT);
         int y = 60;
         for (size_t i = 0; i < logs.size(); ++i) {
@@ -318,6 +321,9 @@ int main(int argc, char* args[]) {
             }
             y += LINE_HEIGHT;
         }
+        
+        // Bỏ ClipRect sau khi vẽ xong Log
+        SDL_RenderSetClipRect(g_renderer, NULL);
 
         // Fake Data Column 1
         int tel_y = 60;
